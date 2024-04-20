@@ -44,7 +44,9 @@ const Print = {
       if (images.length > 0) {
         loadIframeImages(Array.from(images)).then(() => performPrint(iframeElement, params))
       } else {
-        performPrint(iframeElement, params)
+        checkStylesLoaded(printDocument, () => {
+          performPrint(iframeElement, params)
+        })
       }
     }
   }
@@ -59,15 +61,15 @@ function performPrint (iframeElement, params) {
       try {
         iframeElement.contentWindow.document.execCommand('print', false, null)
       } catch (e) {
-        setTimeout(function(){
+        setTimeout(function () {
           iframeElement.contentWindow.print()
-        },1000)
+        }, 1000)
       }
     } else {
       // Other browsers
-      setTimeout(function(){
+      setTimeout(function () {
         iframeElement.contentWindow.print()
-      },1000)
+      }, 1000)
     }
   } catch (error) {
     params.onError(error)
@@ -101,6 +103,27 @@ function loadIframeImage (image) {
     }
     pollImage()
   })
+}
+
+function checkStylesLoaded (printDocument, cb) {
+  const stylesheets = printDocument.styleSheets
+  let stylesLoaded = true
+
+  for (let i = 0; i < stylesheets.length; i++) {
+    if (stylesheets[i].cssRules === null) {
+      stylesLoaded = false
+      break
+    }
+  }
+
+  if (stylesLoaded) {
+    console.log('All styles loaded in iframe')
+    // 在这里执行你希望在样式加载完成后执行的操作
+    cb && cb()
+  } else {
+    // 如果样式尚未加载完毕，可以选择等待一段时间后再次检查，或执行其他操作
+    setTimeout(checkStylesLoaded, 100) // 每 100 毫秒检查一次
+  }
 }
 
 export default Print
